@@ -88,7 +88,7 @@
 #define RAPIDJSON_NAMESPACE rapidjson
 #endif
 #ifndef RAPIDJSON_NAMESPACE_BEGIN
-#define RAPIDJSON_NAMESPACE_BEGIN namespace RAPIDJSON_NAMESPACE {
+#define RAPIDJSON_NAMESPACE_BEGIN namespace rapidjson {
 #endif
 #ifndef RAPIDJSON_NAMESPACE_END
 #define RAPIDJSON_NAMESPACE_END }
@@ -310,9 +310,17 @@ RAPIDJSON_NAMESPACE_END
     \note Parsing errors are handled and can be customized by the
           \ref RAPIDJSON_ERRORS APIs.
 */
+
+
 #ifndef RAPIDJSON_ASSERT
 #include <cassert>
-#define RAPIDJSON_ASSERT(x) assert(x)
+static void __RapidJsonAssertFailed()
+{
+	assert(false);
+}
+
+#define RAPIDJSON_ASSERT(cond) if (!(cond)) { __RapidJsonAssertFailed(); }
+//#define RAPIDJSON_ASSERT(x) assert(x)
 #endif // RAPIDJSON_ASSERT
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -623,6 +631,8 @@ enum Type {
     kStringType = 5,    //!< string
     kNumberType = 6     //!< number
 };
+
+#define FOR_EACH_JSON(i,items) for(auto i = (items).MemberBegin();i!=(items).MemberEnd();++i) 
 
 RAPIDJSON_NAMESPACE_END
 

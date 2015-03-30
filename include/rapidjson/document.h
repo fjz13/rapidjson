@@ -1216,6 +1216,19 @@ public:
     /*! \pre IsArray() == true */
     ConstValueIterator End() const { return const_cast<GenericValue&>(*this).End(); }
 
+	//! Element iterator
+	/*! \pre IsArray() == true */
+	ValueIterator begin() { RAPIDJSON_ASSERT(IsArray()); return data_.a.elements; }
+	//! \em Past-the-end element iterator
+	/*! \pre IsArray() == true */
+	ValueIterator end() { RAPIDJSON_ASSERT(IsArray()); return data_.a.elements + data_.a.size; }
+	//! Constant element iterator
+	/*! \pre IsArray() == true */
+	ConstValueIterator begin() const { return const_cast<GenericValue&>(*this).Begin(); }
+	//! Constant \em past-the-end element iterator
+	/*! \pre IsArray() == true */
+	ConstValueIterator end() const { return const_cast<GenericValue&>(*this).End(); }
+
     //! Request the array to have enough capacity to store elements.
     /*! \param newCapacity  The capacity that the array at least need to have.
         \param allocator    Allocator for reallocating memory. It must be the same one as used before. Commonly use GenericDocument::GetAllocator().
@@ -1355,6 +1368,7 @@ public:
         if ((flags_ & kInt64Flag) != 0)                 return (double)data_.n.i64; // int64_t -> double (may lose precision)
         RAPIDJSON_ASSERT((flags_ & kUint64Flag) != 0);  return (double)data_.n.u64; // uint64_t -> double (may lose precision)
     }
+	float GetFloat()const { return (float)GetDouble(); }
 
     GenericValue& SetInt(int i)             { this->~GenericValue(); new (this) GenericValue(i);    return *this; }
     GenericValue& SetUint(unsigned u)       { this->~GenericValue(); new (this) GenericValue(u);    return *this; }
@@ -1362,6 +1376,109 @@ public:
     GenericValue& SetUint64(uint64_t u64)   { this->~GenericValue(); new (this) GenericValue(u64);  return *this; }
     GenericValue& SetDouble(double d)       { this->~GenericValue(); new (this) GenericValue(d);    return *this; }
 
+	template <typename T>
+	bool Get(T* name, bool defaultVal)const
+	{
+		ConstMemberIterator member = FindMember(name);
+		if (member != MemberEnd() && member->value.IsBool())
+			return member->value.GetBool();
+		else
+		{
+			return defaultVal;
+		}
+	}
+
+	template <typename T>
+	int Get(T* name, int defaultVal)const
+	{
+		ConstMemberIterator member = FindMember(name);
+		if (member != MemberEnd() && member->value.IsInt())
+			return member->value.GetInt();
+		else
+		{
+			return defaultVal;
+		}
+	}
+	template <typename T>
+	unsigned Get(T* name, unsigned defaultVal)const
+	{
+		MemberIterator member = FindMember(name);
+		if (member != MemberEnd() && member->value.IsUint())
+			return member->value.GetUint();
+		else
+		{
+			return defaultVal;
+		}
+	}
+	template <typename T>
+	int64_t Get(T* name, int64_t defaultVal)const
+	{
+		ConstMemberIterator member = FindMember(name);
+		if (member != MemberEnd() && member->value.IsInt64())
+			return member->value.GetInt64();
+		else
+		{
+			return defaultVal;
+		}
+	}
+	template <typename T>
+	uint64_t Get(T* name, uint64_t defaultVal)const
+	{
+		ConstMemberIterator member = FindMember(name);
+		if (member != MemberEnd() && member->value.IsUint64())
+			return member->value.GetUint64();
+		else
+		{
+			return defaultVal;
+		}
+	}
+	template <typename T>
+	double Get(T* name, double defaultVal)const
+	{
+		ConstMemberIterator member = FindMember(name);
+		if (member != MemberEnd())
+			return member->value.GetDouble();
+		else
+		{
+			return defaultVal;
+		}
+	}
+	template <typename T>
+	float Get(T* name, float defaultVal)const
+	{
+		ConstMemberIterator member = FindMember(name);
+		if (member != MemberEnd())
+			return (float)member->value.GetDouble();
+		else
+		{
+			return defaultVal;
+		}
+	}
+	template <typename T>
+	const Ch* GetString(T* name, const Ch* defaultVal)const
+	{
+		ConstMemberIterator member = FindMember(name);
+		if (member != MemberEnd() && member->value.IsString())
+			return (const Ch*)member->value.GetString();
+		return defaultVal;
+	}
+
+	template <typename T>
+	const GenericValue* GetMember(T* name)const
+	{
+		ConstMemberIterator member = FindMember(name);
+		if (member != MemberEnd())
+			return &(member->value);
+		return NULL;
+	}
+	template <typename T>
+	GenericValue* GetMember(T* name)
+	{
+		MemberIterator member = FindMember(name);
+		if (member != MemberEnd())
+			return &(member->value);
+		return NULL;
+	}
     //@}
 
     //!@name String
