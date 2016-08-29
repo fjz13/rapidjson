@@ -316,8 +316,6 @@ struct GenericStringRef {
 
     GenericStringRef(const GenericStringRef& rhs) : s(rhs.s), length(rhs.length) {}
 
-    GenericStringRef& operator=(const GenericStringRef& rhs) { s = rhs.s; length = rhs.length; }
-
     //! implicit conversion to plain CharType pointer
     operator const Ch *() const { return s; }
 
@@ -328,6 +326,8 @@ private:
     //! Disallow construction from non-const array
     template<SizeType N>
     GenericStringRef(CharType (&str)[N]) /* = delete */;
+    //! Copy assignment operator not permitted - immutable type
+    GenericStringRef& operator=(const GenericStringRef& rhs) /* = delete */;
 };
 
 //! Mark a character pointer as constant string
@@ -1513,18 +1513,20 @@ public:
     /*! \pre IsArray() == true */
     ConstValueIterator End() const { return const_cast<GenericValue&>(*this).End(); }
 
-	//! Element iterator
+#if RAPIDJSON_HAS_CXX11_RANGE_FOR
 	/*! \pre IsArray() == true */
-	ValueIterator begin() { RAPIDJSON_ASSERT(IsArray()); return data_.a.elements; }
+	ValueIterator begin() { RAPIDJSON_ASSERT(IsArray()); return GetElementsPointer(); }
 	//! \em Past-the-end element iterator
 	/*! \pre IsArray() == true */
-	ValueIterator end() { RAPIDJSON_ASSERT(IsArray()); return data_.a.elements + data_.a.size; }
+	ValueIterator end() { RAPIDJSON_ASSERT(IsArray()); return GetElementsPointer() + data_.a.size; }
 	//! Constant element iterator
 	/*! \pre IsArray() == true */
 	ConstValueIterator begin() const { return const_cast<GenericValue&>(*this).Begin(); }
 	//! Constant \em past-the-end element iterator
 	/*! \pre IsArray() == true */
 	ConstValueIterator end() const { return const_cast<GenericValue&>(*this).End(); }
+#endif
+
 
     //! Request the array to have enough capacity to store elements.
     /*! \param newCapacity  The capacity that the array at least need to have.
@@ -1671,7 +1673,6 @@ public:
         if ((data_.f.flags & kInt64Flag) != 0)                 return static_cast<double>(data_.n.i64); // int64_t -> double (may lose precision)
         RAPIDJSON_ASSERT((data_.f.flags & kUint64Flag) != 0);  return static_cast<double>(data_.n.u64); // uint64_t -> double (may lose precision)
     }
-	float GetFloat()const { return (float)GetDouble(); }
 
     //! Get the value as float type.
     /*! \note If the value is 64-bit integer type, it may lose precision. Use \c IsLosslessFloat() to check whether the converison is lossless.
@@ -1688,7 +1689,7 @@ public:
     GenericValue& SetFloat(float f)         { this->~GenericValue(); new (this) GenericValue(f);    return *this; }
 
 	template <typename T>
-	bool Get(T* name, bool defaultVal)const
+	bool GetMember(T* name, bool defaultVal)const
 	{
 		ConstMemberIterator member = FindMember(name);
 		if (member != MemberEnd() && member->value.IsBool())
@@ -1700,7 +1701,7 @@ public:
 	}
 
 	template <typename T>
-	int Get(T* name, int defaultVal)const
+	int GetMember(T* name, int defaultVal)const
 	{
 		ConstMemberIterator member = FindMember(name);
 		if (member != MemberEnd() && member->value.IsInt())
@@ -1711,9 +1712,9 @@ public:
 		}
 	}
 	template <typename T>
-	unsigned Get(T* name, unsigned defaultVal)const
+	unsigned GetMember(T* name, unsigned defaultVal)const
 	{
-		MemberIterator member = FindMember(name);
+		ConstMemberIterator member = FindMember(name);
 		if (member != MemberEnd() && member->value.IsUint())
 			return member->value.GetUint();
 		else
@@ -1722,7 +1723,7 @@ public:
 		}
 	}
 	template <typename T>
-	int64_t Get(T* name, int64_t defaultVal)const
+	int64_t GetMember(T* name, int64_t defaultVal)const
 	{
 		ConstMemberIterator member = FindMember(name);
 		if (member != MemberEnd() && member->value.IsInt64())
@@ -1733,7 +1734,7 @@ public:
 		}
 	}
 	template <typename T>
-	uint64_t Get(T* name, uint64_t defaultVal)const
+	uint64_t GetMember(T* name, uint64_t defaultVal)const
 	{
 		ConstMemberIterator member = FindMember(name);
 		if (member != MemberEnd() && member->value.IsUint64())
@@ -1744,7 +1745,7 @@ public:
 		}
 	}
 	template <typename T>
-	double Get(T* name, double defaultVal)const
+	double GetMember(T* name, double defaultVal)const
 	{
 		ConstMemberIterator member = FindMember(name);
 		if (member != MemberEnd())
@@ -1755,7 +1756,7 @@ public:
 		}
 	}
 	template <typename T>
-	float Get(T* name, float defaultVal)const
+	float GetMember(T* name, float defaultVal)const
 	{
 		ConstMemberIterator member = FindMember(name);
 		if (member != MemberEnd())
@@ -1766,7 +1767,7 @@ public:
 		}
 	}
 	template <typename T>
-	const Ch* GetString(T* name, const Ch* defaultVal)const
+	const Ch* GetMember(T* name, const Ch* defaultVal)const
 	{
 		ConstMemberIterator member = FindMember(name);
 		if (member != MemberEnd() && member->value.IsString())
@@ -1775,7 +1776,7 @@ public:
 	}
 
 	template <typename T>
-	const GenericValue* GetMember(T* name)const
+	const GenericValue* GetMemberValue(T* name)const
 	{
 		ConstMemberIterator member = FindMember(name);
 		if (member != MemberEnd())
@@ -1783,13 +1784,15 @@ public:
 		return NULL;
 	}
 	template <typename T>
-	GenericValue* GetMember(T* name)
+	GenericValue* GetMemberValue(T* name)
 	{
 		MemberIterator member = FindMember(name);
 		if (member != MemberEnd())
 			return &(member->value);
 		return NULL;
 	}
+
+
     //@}
 
     //!@name String
